@@ -1,0 +1,134 @@
+// Fonts
+@import url('https://fonts.googleapis.com/css?family=Nunito');
+
+// Variables
+@import 'variables';
+
+// Bootstrap
+@import '~bootstrap/scss/bootstrap';
+
+.container-userdelete {
+    margin-top: 50px;
+}
+
+.container-profile-categories {
+    margin-top: 20px;
+}
+
+a, a:hover { 
+    color: inherit;
+    text-decoration: none;
+}
+
+.container-main {
+    margin-top: 50px;
+}
+
+.navbar {
+    padding-left: 100px;
+}
+
+.card-header-ad {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.table tbody > tr > td.btn-see {
+    vertical-align: middle;
+}
+
+.table tbody > tr > td {
+    vertical-align: middle;
+}
+
+.card-img-top {
+    max-width: 20vw;
+    max-height: 15vw;
+    object-fit: cover;
+    border: 2px solid rgb(219, 207, 183);
+}
+
+.card_ads {
+    text-align: center;
+    margin-top: 30px;
+}
+
+.card-header-title {
+    font-size: 20px;
+}
+
+.nav-item > .nav-link {
+    font-size: 18px;
+}
+
+.card-body-ad {
+    display : flex;
+    justify-content: space-evenly;
+}
+
+.card-header-main {
+    display: flex;
+    align-items: center;
+}
+
+.card-header-main > .card-header-title {
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+.card-header-select {
+    background-color: rgba(255, 255, 255, 0.972);
+    border-radius: 4px;
+    height: 30px;
+    outline: none;
+    margin-left: 40px;
+}
+
+.card-header-search {
+    margin-left: 20px;
+}
+
+.btn-see {
+    background-color:#8BDAD1;
+}
+
+.btn-see {
+    margin-top: 20px;
+}
+
+.button, .btn_delete, .btn_search {
+    background-color: rgba(132, 219, 209, 0.924);
+    border: 2px solid rgba(139, 218, 209, 0.452);
+    border-radius: 4px;
+    color: black;
+    display: inline-block;
+    font-size: 1.1em;
+}
+
+.button > div, .btn_delete > div, .btn_search > div {
+    border-radius: 4px;
+    text-decoration: none;
+    padding: 4px 10px;
+}
+
+.btn_delete, .btn_search {
+    padding: initial;
+}
+
+.button:hover > div, .btn_delete:hover > div, .btn_search:hover > div {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-color: rgba(139, 218, 209, 0.157);
+    color: white;
+}
+
+.card-text-buttons {
+    display: flex;
+    justify-content: space-evenly;
+    margin-top: 10px;
+}
+
+#wrapper_search {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}

@@ -84,7 +84,11 @@
     <div class="card-deck">
         @if (count($ads) == 0)
             <div class="card card_ads">
-                <h6>NO ADVERTISEMENTS FOUND !</h6> 
+                @if ($params == 'custom')
+                    <h6>NO ADVERTISEMENTS FOUND ! Add your favorite categories in your profile for customized advertisements</h6> 
+                @else
+                    <h6>NO ADVERTISEMENTS FOUND !</h6> 
+                @endif
             </div>
         @else
             @foreach($ads as $ad)
@@ -94,9 +98,9 @@
                             <img class="card-img-top" src="{{URL::asset('photos/').'/'.$ad->photos}}">
                         </div>
                     @else
-                        @foreach($array_photos as $array_photo)
+                        @foreach(explode(', ', $ad->photos) as $photo)
                             <div class="text-center">
-                                <img class="card-img-top" src="{{URL::asset('photos/').'/'.$array_photo}}">
+                                <img class="card-img-top" src="{{URL::asset('photos/').'/'.$photo}}">
                             </div>
                         @endforeach
                     @endif

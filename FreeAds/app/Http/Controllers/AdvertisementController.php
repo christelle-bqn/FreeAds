@@ -8,6 +8,8 @@ use App\Http\Requests\Advertisement as AdvertisementRequest;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+//use Illuminate\Support\Facades\Storage;
+//use Intervention\Image\Facades\Image as InterventionImage;
 
 class AdvertisementController extends Controller
 {
@@ -21,16 +23,17 @@ class AdvertisementController extends Controller
     {
         $categories = Category::all();
         $users = User::all();
+        $user = User::findOrFail(Auth::id()); 
         $ads_cities = Advertisement::select('city')->distinct()->pluck('city');
+        $array_photos = "";
         if (empty($params)) {
             $ads = Advertisement::all();
         } elseif ($params == 'latest') {
             $ads = Advertisement::orderBy('updated_at', 'desc')->get();
         } elseif ($params == 'custom') {
             $user_categories = User::leftJoin('category_user', 'users.id', '=', 'category_user.user_id')->rightJoin('categories', 'category_user.category_id', '=', 'categories.id')->where('users.id', Auth::id())->pluck('category_user.category_id');
-            //$ads_categories = Advertisement::join('category_user', 'advertisements.category_id', '=', 'category_user.category_id')->join('categories', 'category_user.category_id', '=', 'categories.id')->pluck('advertisements.category_id');
             $user_city = User::where('id', '=', Auth::id())->pluck('city');
-            $ads = Advertisement::where('city', '=', $user_city)->orwhereIn('category_id', $user_categories)->get();
+            $ads = Advertisement::whereIn('category_id', $user_categories)->where('user_id', '!=', $user->id)->get();
         } else if ($params == 'search') {
             $search_input = $request->get('search');
             $ads = Advertisement::where('title', 'like', "%$search_input%")
@@ -39,11 +42,13 @@ class AdvertisementController extends Controller
                 ->get();
         }
         $ads_photos = Advertisement::select('photos')->get();
-        foreach ($ads_photos as $photo) {
-            if (strpos($photo, ', ') != false) {
-                $array_photos = explode(', ', $photo['photos']);
+        foreach ($ads as $ad) {
+            if (strpos($ad['photos'], ', ') === false) {
+                $array_photos = $ad['photos'];
+            } else {
+                $array_photos = explode(', ', $ad['photos']);
             }
-        } 
+        }
         return view('advertisement/index', compact('ads', 'users', 'array_photos', 'params', 'categories', 'ads_cities'));
     }
 
@@ -94,12 +99,14 @@ class AdvertisementController extends Controller
     public function show(Advertisement $advertisement)
     {
         if (strpos($advertisement->photos, ', ') === false) {
-            $photo = $advertisement->photos;
+            $array_photos = $advertisement->photos;
         } else {
             $array_photos = explode(', ', $advertisement->photos);
         }
+        $ad_id = $advertisement->id;
         $user = User::where('id', $advertisement['user_id'])->get();
-        return view('advertisement/show', compact('advertisement', 'user', 'array_photos'));
+        $ad_category = Advertisement::leftJoin('category_user', 'advertisements.category_id', '=', 'category_user.category_id')->join('categories', 'advertisements.category_id', '=', 'categories.id')->where('advertisements.id', $ad_id)->first()->name;
+        return view('advertisement/show', compact('advertisement', 'user', 'array_photos', 'ad_category'));
     }
 
     public function showUser($id)
@@ -107,7 +114,9 @@ class AdvertisementController extends Controller
         $ads = User::find($id)->advertisements()->orderBy('updated_at', 'desc')->get();
         $ads_photos = User::find($id)->advertisements()->select('photos')->get();
         foreach ($ads_photos as $photo) {
-            if (strpos($photo, ', ') != false) {
+            if (strpos($photo, ', ') === false) {
+                $array_photos = $photo['photos'];
+            } else {
                 $array_photos = explode(', ', $photo['photos']);
             }
         } 
@@ -123,7 +132,6 @@ class AdvertisementController extends Controller
     public function edit($id)
     {
         $ad = Advertisement::findOrFail($id);
-        $categories = Category::all();
         $categories_ad = Category::all();
         $ad_category = Advertisement::leftJoin('category_user', 'advertisements.category_id', '=', 'category_user.category_id')->join('categories', 'advertisements.category_id', '=', 'categories.id')->where('advertisements.id', $id)->first()->name;
         $ad_photos = Advertisement::select('photos')->get();
@@ -146,15 +154,15 @@ class AdvertisementController extends Controller
     {
         $ad = Advertisement::findOrFail($id);
         $array_inputs = $request->all();
-        if ($array_inputs['title'] != null) {
-            $validator = Validator::make($array_inputs, [
+        if ($request->filled('title')) {
+            $validator = Validator::make($request->input('title'), [
                 'title' => ['string', 'min:4', 'max:100'],
             ]);
-        } else if ($array_inputs['description'] != null) {
-            $validator = Validator::make($array_inputs, [
+        } else if ($request->filled('description')) {
+            $validator = Validator::make($request->input('description'), [
                 'description' => ['string', 'string', 'min:20', 'max:500'],
             ]);
-        } else if (isset($array_inputs['photos']) && $array_inputs['photos'] != null) {
+        } else if ($request->filled('photos')) {
             $photos = count($request->file('photos'));
             foreach(range(0, $photos) as $index) {
                 $rules['photos.' . $index] = 'image|mimes:jpg,jpeg,bmp,png|max:2000';
@@ -166,14 +174,14 @@ class AdvertisementController extends Controller
                 $path = $photo->store('photos');
                 $str_photo .= basename($path . ', ');
             }
-            $str_photo = substr($str_photo, 0, -2);
-            $array_inputs['photos'] = $str_photo;
-        } else if ($array_inputs['price'] != null) {
-            $validator = Validator::make($array_inputs, [
+            $str_photos = substr($str_photo, 0, -2);
+            $array_inputs['photos'] = $str_photos;
+        } else if ($request->filled('price')) {
+            $validator = Validator::make($request->input('price'), [
                 'price' => ['numeric', 'min:1', 'max:100000'],
             ]);
-        } else if (isset($array_inputs['category_id']) && $array_inputs['category_id'] != null) {
-            $validator = Validator::make($array_inputs, [
+        } else if ($request->filled('category_id')) {
+            $validator = Validator::make($request->category_id, [
                 'category_id' => 'required',
             ]);
         }
@@ -200,7 +208,6 @@ class AdvertisementController extends Controller
         if (empty($array_inputs['category_id'])) {
             $array_inputs['category_id'] = $ad->category_id;
         }
-
         $ad->fill($array_inputs)->save();
         return redirect()->route('advertisements.update', ['advertisement' => $id])->with('info', 'Successfully modified !');   
     }
@@ -264,19 +271,19 @@ class AdvertisementController extends Controller
         }
   
         if (isset($query) && $query === '1') {
-            $ads = Advertisement::select('*')->leftJoin('category_user', 'advertisements.category_id', '=', 'category_user.category_id')->join('categories', 'advertisements.category_id', '=', 'categories.id')->whereIn('advertisements.category_id', [$str_category])->get();
+            $ads = Advertisement::select('*')->leftJoin('category_user', 'advertisements.category_id', '=', 'category_user.category_id')->join('categories', 'advertisements.category_id', '=', 'categories.id')->whereIn('advertisements.category_id', $request->cats)->get();
         } elseif (isset($query) && $query === '2') {
-            $ads = Advertisement::select('*')->leftJoin('category_user', 'advertisements.category_id', '=', 'category_user.category_id')->join('categories', 'advertisements.category_id', '=', 'categories.id')->whereIn('city', [$str_cities])->get();
+            $ads = Advertisement::select('*')->leftJoin('category_user', 'advertisements.category_id', '=', 'category_user.category_id')->join('categories', 'advertisements.category_id', '=', 'categories.id')->whereIn('city', $request->cities)->get();
         } elseif (isset($query) && $query === '3') {
             $ads = Advertisement::select('*')->leftJoin('category_user', 'advertisements.category_id', '=', 'category_user.category_id')->join('categories', 'advertisements.category_id', '=', 'categories.id')->whereBetween('price', [$min_price, $max_price])->get();
         } elseif (isset($query) && $query === '4') {
-            $ads = Advertisement::select('*')->leftJoin('category_user', 'advertisements.category_id', '=', 'category_user.category_id')->join('categories', 'advertisements.category_id', '=', 'categories.id')->whereIn('advertisements.category_id', [$str_category])->whereIn('city', [$str_cities])->get();
+            $ads = Advertisement::select('*')->leftJoin('category_user', 'advertisements.category_id', '=', 'category_user.category_id')->join('categories', 'advertisements.category_id', '=', 'categories.id')->whereIn('advertisements.category_id', $request->cats)->whereIn('city', $request->cities)->get();
         } elseif (isset($query) && $query === '5') {
-            $ads = Advertisement::select('*')->leftJoin('category_user', 'advertisements.category_id', '=', 'category_user.category_id')->join('categories', 'advertisements.category_id', '=', 'categories.id')->whereIn('advertisements.category_id', [$str_category])->whereBetween('price', [$min_price, $max_price])->get();
+            $ads = Advertisement::select('*')->leftJoin('category_user', 'advertisements.category_id', '=', 'category_user.category_id')->join('categories', 'advertisements.category_id', '=', 'categories.id')->whereIn('advertisements.category_id', $request->cats)->whereBetween('price', [$min_price, $max_price])->get();
         } elseif (isset($query) && $query === '6') {
-            $ads = Advertisement::select('*')->leftJoin('category_user', 'advertisements.category_id', '=', 'category_user.category_id')->join('categories', 'advertisements.category_id', '=', 'categories.id')->whereIn('city', [$str_cities])->whereBetween('price', [$min_price, $max_price])->get();
+            $ads = Advertisement::select('*')->leftJoin('category_user', 'advertisements.category_id', '=', 'category_user.category_id')->join('categories', 'advertisements.category_id', '=', 'categories.id')->whereIn('city', $request->cities)->whereBetween('price', [$min_price, $max_price])->get();
         } elseif (isset($query) && $query === '7') {
-            $ads = Advertisement::select('*')->leftJoin('category_user', 'advertisements.category_id', '=', 'category_user.category_id')->join('categories', 'advertisements.category_id', '=', 'categories.id')->whereIn('advertisements.category_id', [$str_category])->whereIn('city', [$str_cities])->whereBetween('price', [$min_price, $max_price])->get();
+            $ads = Advertisement::select('*')->leftJoin('category_user', 'advertisements.category_id', '=', 'category_user.category_id')->join('categories', 'advertisements.category_id', '=', 'categories.id')->whereIn('advertisements.category_id', $request->cats)->whereIn('city', $request->cities)->whereBetween('price', [$min_price, $max_price])->get();
         } 
 
         $ads_photos = Advertisement::select('photos')->get();
@@ -289,7 +296,7 @@ class AdvertisementController extends Controller
         if (isset($ads)) {
             return view('advertisement/index', compact('ads', 'users', 'array_photos', 'categories', 'ads_cities'));
         } else {
-            return view('advertisement/index', compact('ads, users', 'array_photos', 'categories', 'ads_cities'));
+            return view('advertisement/index', compact('ads', 'users', 'array_photos', 'categories', 'ads_cities'));
         }
     }
 }

@@ -45,6 +45,7 @@
                                     <li class="list-group-item">Title : {{ $advertisement->title }}</li>
                                     <li class="list-group-item">Description : {{ $advertisement->description }}</li>
                                     <li class="list-group-item">Price : {{ $advertisement->price }} €</li>
+                                    <li class="list-group-item">Category : {{ $ad_category }}</li>
                                     <li class="list-group-item">Created at : {{ $advertisement->created_at }}</li>
                                     <li class="list-group-item">Updated at : {{ $advertisement->updated_at }}</li>
                                 </ul>

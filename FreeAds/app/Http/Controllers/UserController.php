@@ -8,6 +8,7 @@ use App\Http\Requests\User as UserRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+//use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
@@ -39,6 +40,12 @@ class UserController extends Controller
      */
     public function store(UserRequest $userRequest)
     {
+        /* User::create([
+            'name' => $userRequest['name'],
+            'email' => $userRequest['email'],
+            'password' => Hash::make($userRequest['password']),
+        ]); */
+
         $user = User::findOrFail(Auth::id());
         $user_categories = $user->categories()->count();
         if($user_categories == null) {
@@ -60,7 +67,12 @@ class UserController extends Controller
     {
         $categories = Category::all();
         $user = User::findOrFail($id);
-        return view('user/profile', compact('user', 'categories'));
+        $user_categories = User::leftJoin('category_user', 'users.id', '=', 'category_user.user_id')->rightJoin('categories', 'category_user.category_id', '=', 'categories.id')->where('users.id', $id)->pluck('categories.name');
+        $array_categories = [];
+        foreach($user_categories as $category) {
+            array_push($array_categories, $category);
+        }
+        return view('user/profile', compact('user', 'categories', 'array_categories'));
     }
 
     /**
@@ -86,6 +98,25 @@ class UserController extends Controller
     {
         $user = User::findOrFail($id);
         $array_inputs = $request->all();
+        /* $array_inputs = $request->all();
+        if ($array_inputs['name'] != null) {
+            $validator = Validator::make($array_inputs, [
+                'name' => ['string', 'min:3', 'max:255'],
+            ]);
+        } else if ($array_inputs['city'] != null) {
+            $validator = Validator::make($array_inputs, [
+                'city' => ['string', 'min:3', 'max:255'],
+            ]);
+        } else if ($array_inputs['email'] != null) {
+            $validator = Validator::make($array_inputs, [
+                'email' => ['string', 'email', 'max:255', 'unique:users'],
+            ]);
+        }
+        if ($validator->fails()) {
+            return redirect('users/'.$id.'/edit')
+                        ->withErrors($validator)
+                        ->withInput();
+        }$*/
         if (empty($array_inputs['name'])) {
             $array_inputs['name'] = $user->name;
         }

@@ -34,6 +34,13 @@
                         {{ __('Add your favorite categories for customized advertisements') }}
                     </div>
                     <div class="card-body">
+                        <div>
+                            <p>Your favorite categories :
+                            @foreach($array_categories as $category)
+                                 {{ $category }} /
+                            @endforeach
+                            </p>
+                        </div>
                         <form class="form-horizontal" method="POST" action="{{ route('users.store', Auth::id()) }}">
                         {{ csrf_field() }}
                             <ul class="list-group list-group-flush">
